@@ -1,25 +1,47 @@
 @page "/projects"
 @inject HttpClient Http
 
-<h3>Projects</h3>
+<PageTitle>My Projects</PageTitle>
 
-<ul>
-    @foreach (var project in projects)
-    {
-        <li>
-            <h4>@project?.Title</h4>
-            <p>@project?.Description</p>
-            <a href="@project?.Url" target="_blank" rel="noopener noreferrer">Visit Project</a>
-        </li>
-    }
-</ul>
+<h1 class="text-center my-4 text-primary">My Projects</h1>
+
+@if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+
+<div class="container">
+    <div class="row">
+        @foreach (var project in projects)
+        {
+            <div class="col-md-4">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">@project?.Title</h5>
+                        <p class="card-text">@project?.Description</p>
+                        <a href="@project?.Url" class="btn btn-primary" target="_blank" rel="noopener noreferrer">View
+                            Project</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
 
 @code {
     private List<Project> projects = new List<Project>();
+    private string? error = null;
 
     protected override async Task OnInitializedAsync()
     {
-        projects = await Http.GetFromJsonAsync<List<Project>>("api/projects");
+        try
+        {
+            projects = await Http.GetFromJsonAsync<List<Project>>("api/projects");
+        }
+        catch (Exception ex)
+        {
+            error = "Error loading projects. Please try again later.";
+        }
     }
 
     public class Project
@@ -28,6 +50,6 @@
         public string? Title { get; set; }
         public string? Description { get; set; }
         public string? Url { get; set; }
-        
+
     }
 }
