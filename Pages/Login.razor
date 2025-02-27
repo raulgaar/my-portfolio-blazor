@@ -1,0 +1,52 @@
+@page "/login"
+@inject LocalizationService Localization
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<h3>@Localization.Translate("login.title")</h3>
+
+@if (errorMessage != null)
+{
+    <p class="text-danger">@errorMessage</p>
+}
+
+<form @onsubmit="HandleLogin">
+    <div class="mb-3">
+        <label class="form-label">@Localization.Translate("login.username")</label>
+        <input @bind="username" class="form-control" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">@Localization.Translate("login.password")</label>
+        <input type="password" @bind="password" class="form-control" required />
+    </div>
+    <button type="submit" class="btn btn-primary">@Localization.Translate("login.button")</button>
+</form>
+
+@code {
+    private string username = "";
+    private string password = "";
+    private string? errorMessage;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += RefreshUI;
+    }
+    private void RefreshUI()
+    {
+        StateHasChanged();
+    }
+    private async Task HandleLogin()
+    {
+        var success = await AuthService.Login(username, password);
+        if (success)
+        {
+            Navigation.NavigateTo("/");
+        }
+        else
+        {
+            errorMessage = Localization.Translate("login.invalid");
+        }
+    }
+
+}

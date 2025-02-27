@@ -1,0 +1,244 @@
+@page "/manage-projects"
+@inject HttpClient Http
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject LocalizationService Localization
+@inject IJSRuntime JSRuntime
+
+<PageTitle>@Localization.Translate("project-manager.title")</PageTitle>
+
+<h3>@Localization.Translate("project-manager.title")</h3>
+
+@if (!isAuthenticated)
+{
+    <p class="text-danger">@Localization.Translate("project-manager.login-message")</p>
+    <NavLink class="btn btn-primary" href="/login">@Localization.Translate("project-manager.nav-to-login")</NavLink>
+}
+else
+{
+    <button class="btn btn-success mb-3"
+        @onclick="ShowAddForm">@Localization.Translate("project-manager.add-project-button")</button>
+
+    @if (projects is not null && projects.Any())
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>@Localization.Translate("headers.title")</th>
+                    <th>@Localization.Translate("headers.description")</th>
+                    <th>Link</th>
+                    <th>@Localization.Translate("headers.actions")</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var project in projects)
+                {
+                    <tr>
+                        <td>@project.Title</td>
+                        <td>@project.Description</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm me-2"
+                                @onclick="() => EditProject(project)">@Localization.Translate("actions.edit")</button>
+                            <button class="btn btn-danger btn sm"
+                                @onclick="() => DeleteProject(project.Id)">@Localization.Translate("actions.delete")</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p>@Localization.Translate("project-manager.no-projects")</p>
+    }
+}
+
+<!-- #Modal for adding/editing project -->
+<div class="modal fade" id="projectModal" tabindex="-1" aria-labelledby="projectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="projectModalLabel">@modalTitle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                    aria-label="@Localization.Translate("actions.close")"></button>
+            </div>
+            <div class="modal-body">
+                <form @onsubmit="HandleSaveProject">
+                    <div class="mb-3">
+                        <label class="form-label">@Localization.Translate("headers.title")</label>
+                        <input @bind="currentProject.Title" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">@Localization.Translate("headers.description")</label>
+                        <textarea @bind="currentProject.Description" class="form-control" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Link</label>
+                        <input @bind="currentProject.Url" class="form-control" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary">@Localization.Translate("actions.save")</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Project> projects = new();
+    private bool isAuthenticated = false;
+    private Project currentProject = new();
+    private string modalTitle = "";
+
+    private async Task<string> GetAuthToken()
+    {
+        return await AuthService.GetToken();
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        isAuthenticated = await AuthService.IsAuthenticated();
+        if (isAuthenticated)
+        {
+            await LoadProjects();
+        }
+
+        Localization.OnLanguageChanged += RefreshUI;
+    }
+
+    private async Task LoadProjects()
+    {
+        try
+        {
+            projects = await Http.GetFromJsonAsync<List<Project>>("api/projects");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading projects: {ex.Message}");
+        }
+    }
+
+    private void ShowAddForm()
+    {
+        modalTitle = Localization.Translate("project-manager.add-project-title");
+        currentProject = new Project();
+        ShowModal();
+    }
+
+    private void EditProject(Project project)
+    {
+        modalTitle = Localization.Translate("project-manager.edit-project-title");
+        currentProject = new Project
+        {
+            Id = project.Id,
+            Title = project.Title,
+            Description = project.Description
+        };
+        ShowModal();
+    }
+
+    private async Task HandleSaveProject()
+    {
+        if (currentProject.Id == 0)
+        {
+            await AddProject();
+        }
+        else
+        {
+            await UpdateProject();
+        }
+
+        CloseModal();
+        await LoadProjects();
+    }
+
+    private async Task AddProject()
+    {
+        var token = await GetAuthToken();
+        var request = new HttpRequestMessage(HttpMethod.Post, "api/projects")
+        {
+            Content = JsonContent.Create(currentProject)
+        };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await Http.SendAsync(request);
+        if (response.IsSuccessStatusCode)
+        {
+            var createdProject = await response.Content.ReadFromJsonAsync<Project>();
+            projects.Add(createdProject);
+        }
+        else
+        {
+            Console.WriteLine("Failed to add project");
+        }
+    }
+
+    private async Task UpdateProject()
+    {
+        var token = await GetAuthToken();
+        var request = new HttpRequestMessage(HttpMethod.Put, $"api/projects/{currentProject.Id}")
+        {
+            Content = JsonContent.Create(currentProject)
+        };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await Http.SendAsync(request);
+        if (response.IsSuccessStatusCode)
+        {
+            var updatedProject = projects.FirstOrDefault(p => p.Id == currentProject.Id);
+            if (updatedProject != null)
+            {
+                updatedProject.Title = currentProject.Title;
+                updatedProject.Description = currentProject.Description;
+            }
+        }
+        else
+        {
+            Console.WriteLine("Failed to update project");
+        }
+    }
+
+    private async Task DeleteProject(int projectId)
+    {
+        var token = await GetAuthToken();
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"api/projects/{projectId}")
+        {
+            Content = JsonContent.Create(currentProject)
+        };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await Http.SendAsync(request);
+        if (response.IsSuccessStatusCode)
+        {
+            projects.RemoveAll(p => p.Id == projectId);
+            StateHasChanged();
+        }
+        else
+        {
+            Console.WriteLine("Failed to delete project");
+        }
+    }
+
+    private void ShowModal()
+    {
+        var modal = new BootstrapModalInterop(JSRuntime);
+        modal.Show("projectModal");
+    }
+
+    private void CloseModal()
+    {
+        var modal = new BootstrapModalInterop(JSRuntime);
+        modal.Hide("projectModal");
+    }
+
+    private void RefreshUI()
+    {
+        StateHasChanged();
+    }
+
+    private class Project
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Url { get; set; } = string.Empty;
+    }
+}

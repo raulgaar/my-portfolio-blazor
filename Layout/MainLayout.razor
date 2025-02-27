@@ -1,5 +1,89 @@
 ﻿@inherits LayoutComponentBase
-        <NavMenu />
+@inject LocalizationService Localization
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+@if (isLoaded)
+{
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">Raul Garcia</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/">@Localization.Translate("navbar.home")</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/projects">@Localization.Translate("navbar.projects")</NavLink>
+                    </li>
+                    @if (isAuthenticated)
+                    {
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="/manage-projects">@Localization.Translate("navbar.manage-projects")</NavLink>
+                        </li>
+                    }
+                </ul>
+                <!-- Selector de idioma -->
+                <select class="form-select w-auto ms-3" @onchange="ChangeLanguage">
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                </select>
+                @if (isAuthenticated)
+                {
+                    <button class="btn btn-danger" @onclick="HandleLogout">@Localization.Translate("navbar.logout")</button>
+                }
+            </div>
+        </div>
+    </nav>
     <div class="container mt-4">
         @Body
     </div>
+}
+else
+{
+    <p>Loading</p>
+}
+
+@code {
+    private bool isLoaded = false;
+    private string selectedLanguage = "en";
+    private bool isAuthenticated = false;
+    protected override async Task OnInitializedAsync()
+    {
+        AuthService.OnAuthStateChanged += CheckAuthenticationStatus;
+        await Localization.LoadTranslationsAsync();
+        CheckAuthenticationStatus();
+        isLoaded = true;
+        selectedLanguage = Localization.CurrentLanguage;
+        StateHasChanged();
+    }
+
+    private void ChangeLanguage(ChangeEventArgs e)
+    {
+        selectedLanguage = e.Value.ToString();
+        Localization.SetLanguage(selectedLanguage);
+        StateHasChanged();
+    }
+
+    private void CheckAuthenticationStatus()
+    {
+        _ = CheckAuthenticationStatusAsync();
+    }
+
+    private async Task CheckAuthenticationStatusAsync()
+    {
+        isAuthenticated = await AuthService.IsAuthenticated();
+        StateHasChanged();
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthService.Logout();
+        isAuthenticated = false;
+        StateHasChanged();
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+}

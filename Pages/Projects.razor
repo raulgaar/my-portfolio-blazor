@@ -1,9 +1,10 @@
 @page "/projects"
 @inject HttpClient Http
+@inject LocalizationService Localization
 
-<PageTitle>My Projects</PageTitle>
+<PageTitle>@Localization.Translate("projects.title")</PageTitle>
 
-<h1 class="text-center my-4 text-primary">My Projects</h1>
+<h1 class="text-center my-4 text-primary">@Localization.Translate("projects.title")</h1>
 
 @if (!string.IsNullOrEmpty(error))
 {
@@ -19,8 +20,8 @@
                     <div class="card-body">
                         <h5 class="card-title">@project?.Title</h5>
                         <p class="card-text">@project?.Description</p>
-                        <a href="@project?.Url" class="btn btn-primary" target="_blank" rel="noopener noreferrer">View
-                            Project</a>
+                        <a href="@GetProjectUrl(project?.Url)" class="btn btn-primary" target="_blank"
+                            rel="noopener noreferrer">@Localization.Translate("projects.link")</a>
                     </div>
                 </div>
             </div>
@@ -34,14 +35,35 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadProjects();
+        Localization.OnLanguageChanged += RefreshUI;
+    }
+
+    private async Task LoadProjects()
+    {
         try
         {
             projects = await Http.GetFromJsonAsync<List<Project>>("api/projects");
+            StateHasChanged();
         }
         catch (Exception ex)
         {
             error = "Error loading projects. Please try again later.";
         }
+    }
+
+    private void RefreshUI()
+    {
+        StateHasChanged(); 
+    }
+
+    private string GetProjectUrl(string? url)
+    {
+         if (string.IsNullOrWhiteSpace(url))
+        {
+            return "#";
+        }
+        return url.StartsWith("http") ? url : $"https://{url}";
     }
 
     public class Project
@@ -50,6 +72,5 @@
         public string? Title { get; set; }
         public string? Description { get; set; }
         public string? Url { get; set; }
-
     }
 }

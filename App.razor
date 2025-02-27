@@ -1,4 +1,14 @@
-﻿<Router AppAssembly="@typeof(App).Assembly">
+﻿@inject LocalizationService Localization
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await Localization.LoadTranslationsAsync();
+        StateHasChanged(); // Forzar actualización después de cargar traducciones
+    }
+}
+
+<Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
         <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
@@ -10,3 +20,4 @@
         </LayoutView>
     </NotFound>
 </Router>
+

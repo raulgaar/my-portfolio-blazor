@@ -1,18 +1,52 @@
-﻿<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container">
-        <a class="navbar-brand" href="/">My Portfolio</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav">
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">Home</NavLink>
-                </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="/projects" ActiveClass="">Projects</NavLink>
-                </li>
-            </ul>
+﻿@* @inject LocalizationService Localization
+
+@if (isLoaded)
+{
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">My Portfolio</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/">@Localization.Translate("navbar.home")</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/projects">@Localization.Translate("navbar.projects")</NavLink>
+                    </li>
+                </ul>
+
+                <!-- Selector de idioma -->
+                <select class="form-select w-auto ms-3" @onchange="ChangeLanguage">
+                    <option value="en" selected="@IsSelected("en")">English</option>
+                    <option value="es" selected="@IsSelected("es")">Español</option>
+                </select>
+            </div>
         </div>
-    </div>
-</nav>
+    </nav>
+}
+else
+{
+    <p>Loading</p>
+}
+
+@code {
+    private bool isLoaded = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Localization.LoadTranslationsAsync();
+        isLoaded = true;
+        StateHasChanged(); // Forzar actualización de la interfaz
+    }
+
+    private void ChangeLanguage(ChangeEventArgs e)
+    {
+        Localization.SetLanguage(e.Value.ToString());
+        StateHasChanged();
+    }
+
+    private string IsSelected(string lang) => Localization.CurrentLanguage == lang ? "selected" : "";
+} *@

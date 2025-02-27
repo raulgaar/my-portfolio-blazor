@@ -1,0 +1,47 @@
+{
+    "headers": {
+        "title": "Title",
+        "description": "Description",
+        "actions": "Actions"
+    },
+    "actions": {
+        "save": "Save",
+        "edit": "Edit",
+        "delete": "Delete",
+        "close": "close"
+    },
+    "welcome": "Welcome to my portfolio",
+    "description": "I am a software developer passionate about technology.",
+    "selectLanguage": "Select Language:",
+    "navbar": {
+        "home": "Home",
+        "projects": "Projects",
+        "about": "About Me",
+        "contact": "Contact",
+        "logout": "Log out",
+        "manage-projects": "Manage Projects"
+    },
+    "projects": {
+        "title": "My Projects",
+        "link": "View project",
+        "error": "Failed to load projects. Try again later"
+    },
+    "login": {
+        "failed": "Login failed",
+        "invalid": "Invalid credentials",
+        "successful": "Login succesful!",
+        "title": "Login",
+        "username": "Username",
+        "password": "Password",
+        "button": "Login"
+    },
+    "project-manager": {
+        "title": "Manage Projects",
+        "login-message": "You must be logged in to manage projects.",
+        "nav-to-login": "Go to Login",
+        "add-project-button": "Add New Project",
+        "no-projects": "No projects found.",
+        "add-project-title": "Add project",
+        "edit-project-title": "Edit project"
+    }
+}
